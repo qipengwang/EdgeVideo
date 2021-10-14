@@ -114,7 +114,7 @@ class MobileNetV2(nn.Module):
             [6, 24, 2, 2],
             [6, 32, 3, 2],
             [6, 64, 4, 2],
-            [6, 96, 3, 1],
+            [6, 96, 3, 1],  # after this
             [6, 160, 3, 2],
             [6, 320, 1, 1],
         ]
@@ -140,6 +140,7 @@ class MobileNetV2(nn.Module):
         # building last several layers
         self.features.append(conv_1x1_bn(input_channel, self.last_channel,
                                          use_batch_norm=use_batch_norm, onnx_compatible=onnx_compatible))
+        print('mobienetv2.features:', len(self.features))
         # make it nn.Sequential
         self.features = nn.Sequential(*self.features)
 

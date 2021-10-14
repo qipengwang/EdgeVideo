@@ -204,11 +204,13 @@ def hard_negative_mining(loss, labels, neg_pos_ratio):
     return pos_mask | neg_mask
 
 
+# location: [x, y, w, h]
 def center_form_to_corner_form(locations):
     return torch.cat([locations[..., :2] - locations[..., 2:]/2,
                      locations[..., :2] + locations[..., 2:]/2], locations.dim() - 1) 
 
 
+# box: [x_top_left, y_top_left, x_bottom_right, y_bottom_right]
 def corner_form_to_center_form(boxes):
     return torch.cat([
         (boxes[..., :2] + boxes[..., 2:]) / 2,

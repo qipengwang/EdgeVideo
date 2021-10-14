@@ -34,23 +34,22 @@ class VOCDataset:
                     class_string += line.rstrip()
 
             # classes should be a comma separated list
-            
+
             classes = class_string.split(',')
             # prepend BACKGROUND as first class
             classes.insert(0, 'BACKGROUND')
-            classes  = [ elem.replace(" ", "") for elem in classes]
+            classes = [elem.replace(" ", "") for elem in classes]
             self.class_names = tuple(classes)
             logging.info("VOC Labels read from file: " + str(self.class_names))
 
         else:
             logging.info("No labels file, using default VOC classes.")
             self.class_names = ('BACKGROUND',
-            'aeroplane', 'bicycle', 'bird', 'boat',
-            'bottle', 'bus', 'car', 'cat', 'chair',
-            'cow', 'diningtable', 'dog', 'horse',
-            'motorbike', 'person', 'pottedplant',
-            'sheep', 'sofa', 'train', 'tvmonitor')
-
+                                'aeroplane', 'bicycle', 'bird', 'boat',
+                                'bottle', 'bus', 'car', 'cat', 'chair',
+                                'cow', 'diningtable', 'dog', 'horse',
+                                'motorbike', 'person', 'pottedplant',
+                                'sheep', 'sofa', 'train', 'tvmonitor')
 
         self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
 

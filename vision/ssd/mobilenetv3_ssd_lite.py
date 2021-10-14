@@ -24,7 +24,7 @@ def SeperableConv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=
 def create_mobilenetv3_large_ssd_lite(num_classes, width_mult=1.0, use_batch_norm=True, onnx_compatible=False, is_test=False):
     base_net = MobileNetV3_Large().features
 
-    source_layer_indexes = [ 15, 21 ]
+    source_layer_indexes = [15, 21]
     extras = ModuleList([
         Block(3, 960, 256, 512, hswish(), None, stride=2),
         Block(3, 512, 128, 256, hswish(), None, stride=2),
@@ -33,8 +33,7 @@ def create_mobilenetv3_large_ssd_lite(num_classes, width_mult=1.0, use_batch_nor
     ])
 
     regression_headers = ModuleList([
-        SeperableConv2d(in_channels=round(112 * width_mult), out_channels=6 * 4,
-                        kernel_size=3, padding=1, onnx_compatible=False),
+        SeperableConv2d(in_channels=round(112 * width_mult), out_channels=6 * 4, kernel_size=3, padding=1, onnx_compatible=False),
         SeperableConv2d(in_channels=960, out_channels=6 * 4, kernel_size=3, padding=1, onnx_compatible=False),
         SeperableConv2d(in_channels=512, out_channels=6 * 4, kernel_size=3, padding=1, onnx_compatible=False),
         SeperableConv2d(in_channels=256, out_channels=6 * 4, kernel_size=3, padding=1, onnx_compatible=False),
@@ -58,7 +57,7 @@ def create_mobilenetv3_large_ssd_lite(num_classes, width_mult=1.0, use_batch_nor
 def create_mobilenetv3_small_ssd_lite(num_classes, width_mult=1.0, use_batch_norm=True, onnx_compatible=False, is_test=False):
     base_net = MobileNetV3_Small().features
 
-    source_layer_indexes = [ 11, 17 ]
+    source_layer_indexes = [11, 17]
     extras = ModuleList([
         Block(3, 576, 256, 512, hswish(), None, stride=2),
         Block(3, 512, 128, 256, hswish(), None, stride=2),

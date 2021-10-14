@@ -56,12 +56,14 @@ class SSD(nn.Module):
                 path = None
             for layer in self.base_net[start_layer_index: end_layer_index]:
                 x = layer(x)
+                # print(x.shape)
             if added_layer:
                 y = added_layer(x)
             else:
                 y = x
             if path:
                 sub = getattr(self.base_net[end_layer_index], path.name)
+                # print(sub, path.name, self.base_net[end_layer_index])
                 for layer in sub[:path.s1]:
                     x = layer(x)
                 y = x
@@ -69,6 +71,7 @@ class SSD(nn.Module):
                     x = layer(x)
                 end_layer_index += 1
             start_layer_index = end_layer_index
+            # print('used fm.size:', y.shape)
             confidence, location = self.compute_header(header_index, y)
             header_index += 1
             confidences.append(confidence)
