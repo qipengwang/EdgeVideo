@@ -24,3 +24,6 @@ __pycache__/
 .python-version
 
 /data/
+data/
+*.zip
+evaluate/

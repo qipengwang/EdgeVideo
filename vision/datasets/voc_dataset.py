@@ -67,6 +67,7 @@ class VOCDataset:
         return image, boxes, labels
 
     def get_image(self, index):
+        # when call this function, self.transform is None
         image_id = self.ids[index]
         image = self._read_image(image_id)
         if self.transform:

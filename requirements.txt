@@ -1,0 +1,8 @@
+pandas
+opencv-python
+more_itertools
+requests
+pyyaml
+tqdm
+matplotlib
+seaborn

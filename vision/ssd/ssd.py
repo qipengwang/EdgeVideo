@@ -33,9 +33,8 @@ class SSD(nn.Module):
             self.device = device
         else:
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        if is_test:
-            self.config = config
-            self.priors = config.priors.to(self.device)
+        self.config = config
+        self.priors = config.priors.to(self.device)
             
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         confidences = []
@@ -92,9 +91,7 @@ class SSD(nn.Module):
         
         if self.is_test:
             confidences = F.softmax(confidences, dim=2)
-            boxes = box_utils.convert_locations_to_boxes(
-                locations, self.priors, self.config.center_variance, self.config.size_variance
-            )
+            boxes = box_utils.convert_locations_to_boxes(locations, self.priors, self.config.center_variance, self.config.size_variance)
             boxes = box_utils.center_form_to_corner_form(boxes)
             return confidences, boxes
         else:
@@ -139,7 +136,14 @@ class SSD(nn.Module):
 
     def save(self, model_path):
         torch.save(self.state_dict(), model_path)
-
+    
+    def test(self, test_mode=True):
+        if test_mode:
+            self.eval()
+            self.is_test=True
+        else:
+            self.train()
+            self.is_test=False
 
 class MatchPrior(object):
     def __init__(self, center_form_priors, center_variance, size_variance, iou_threshold):
@@ -156,9 +160,9 @@ class MatchPrior(object):
             gt_labels = torch.from_numpy(gt_labels)
         boxes, labels = box_utils.assign_priors(gt_boxes, gt_labels,
                                                 self.corner_form_priors, self.iou_threshold)
-        boxes = box_utils.corner_form_to_center_form(boxes)
-        locations = box_utils.convert_boxes_to_locations(boxes, self.center_form_priors, self.center_variance, self.size_variance)
-        return locations, labels
+        boxes = torch.FloatTensor(boxes) * 320
+        # locations = box_utils.convert_boxes_to_locations(boxes, self.center_form_priors, self.center_variance, self.size_variance)
+        return boxes, labels
 
 
 def _xavier_init_(m: nn.Module):

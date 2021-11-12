@@ -17,10 +17,12 @@ class Predictor:
 
         self.sigma = sigma
         if device:
+            # print('fuck', device)
             self.device = device
         else:
+            # print('shit')
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+        # print('predictor', self.device, torch.cuda.is_available())
         self.net.to(self.device)
         self.net.eval()
 
@@ -34,8 +36,9 @@ class Predictor:
         images = images.to(self.device)
         with torch.no_grad():
             self.timer.start()
+            # print(images.device, self.device)
             scores, boxes = self.net.forward(images)
-            print("Inference time: ", self.timer.end())
+            # print("Inference time: ", self.timer.end())
         boxes = boxes[0]
         scores = scores[0]
         if not prob_threshold:
