@@ -61,7 +61,7 @@ def arg_parser():
     parser.add_argument('--validation_dataset', help='Dataset directory path')
     parser.add_argument('--balance_data', action='store_true',
                         help="Balance training data by down-sampling more frequent labels.")
-    parser.add_argument('--city', default='berlin',help='The chosed city in cityscapes dataset')
+    parser.add_argument('--city', default='berlin', help='The chosed city in cityscapes dataset')
 
     parser.add_argument('--net', default="mb3-large-ssd-lite",
                         choices=['mb1-ssd', 'mb1-ssd-lite', 'mb2-ssd-lite', 'mb3-large-ssd-lite', 'mb3-small-ssd-lite', 'vgg16-ssd'],
