@@ -33,7 +33,7 @@ from vision.utils.logger import Logger
 
 
 # prepare for training
-parser = argparse.ArgumentParser( dscription='Single Shot MultiBox Detector Training With Pytorch')
+parser = argparse.ArgumentParser(description='Single Shot MultiBox Detector Training With Pytorch')
 parser.add_argument('--config', default='cfg/default.cfg', help='config file name')
 args = parser.parse_args()
 cfg = Configurer(args.config)
@@ -162,14 +162,16 @@ if __name__ == '__main__':
 
     net.to(DEVICE)
     logger.info('predicting baseline using pretrained model')
-    baseline_dataset = CityscapesDataset(rootdir='data', city=cfg.city, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt', 
+    baseline_dataset = CityscapesDataset(rootdir=cfg.validation_dataset, city=cfg.city, labeldir='labels_coco91', 
+                                        labelfile='preprocess/coco-paper-labels.txt', 
                                         transform=train_transform, target_transform=target_transform, mode='ALL')
     cfg_fn_wo_extension = os.path.splitext(os.path.basename(args.config))
+    exit()
     predict(net=net, dataset=baseline_dataset, savepath=f'evaluate/{cfg_fn_wo_extension}_baseline.csv')
     logger.info('predicting first window using pretrained model')
     predict(net=net, dataset=val_dataset, savepath=f'evaluate/{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.csv')
+    optimizer = torch.optim.SGD(params, lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
     while train_dataset.next_window() and val_dataset.next_window():
-        optimizer = torch.optim.SGD(params, lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
         if cfg.scheduler == 'multi-step':
             milestones = [int(v.strip()) for v in cfg.milestones.split(",")]
             scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=cfg.gamma, last_epoch=-1)

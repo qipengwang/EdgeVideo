@@ -1,3 +1,5 @@
+# https://github.com/facebookresearch/Detectron/blob/main/detectron/datasets/voc_eval.py
+
 from typing import Dict, List
 import numpy as np
 import os
@@ -36,7 +38,7 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metric=False):
+def voc_eval(detpath, annopath, classid, ovthresh=0.5, use_07_metric=False):
     """
     Top level function that does the PASCAL VOC evaluation.
     detpath: Path to detections file
@@ -54,8 +56,8 @@ def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metr
     # cachedir caches the annotations in a pickle file
 
     # TODO: first load gt to recs, and get imagenames: LIST[str]
-    with open(imagesetfile) as f:
-        imagenames = [x.strip() for x in f]
+    # with open(imagesetfile) as f:
+    #     imagenames = [x.strip() for x in f]
     
     with open(annopath) as f:
         recs = json.load(f)
@@ -64,7 +66,7 @@ def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metr
     # extract gt objects for this class
     class_recs = {}
     npos = 0
-    for imagename in imagenames:
+    for imagename in recs:
         R = [obj for obj in recs[imagename] if obj['class'] == classid]
         bbox = np.array([x['bbox'] for x in R])
         # difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
@@ -75,13 +77,24 @@ def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metr
                                  'det': det}
 
     # read dets
-    with open(detpath, 'r') as f:
-        lines = f.readlines()
-
-    splitlines = [x.strip().split() for x in lines]
-    image_ids = [x[0] for x in splitlines]
-    confidence = np.array([float(x[1]) for x in splitlines])
-    BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
+    # with open(detpath, 'r') as f:
+    #     lines = f.readlines()
+    # splitlines = [x.strip().split() for x in lines]
+    # image_ids = [x[0] for x in splitlines]
+    # confidence = np.array([float(x[1]) for x in splitlines])
+    # BB = np.array([[float(z) for z in x[2:]] for x in splitlines])
+    with open(detpath) as f:
+        dets = json.load(f)
+    image_ids, confidence, BB = [], [], []
+    for k, vs in dets.items():
+        for v in vs:
+            if v['class'] == classid:
+                image_ids.append(k)
+                confidence.append(v['score'])
+                BB.append(v['bbox'])
+    if not confidence: return 0, 0, 0
+    confidence = np.array(confidence)
+    BB = np.array(BB)
 
     # sort by confidence
     sorted_ind = np.argsort(-confidence)
@@ -93,13 +106,13 @@ def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metr
     tp = np.zeros(nd)
     fp = np.zeros(nd)
     for d in range(nd):
-        R = class_recs[image_ids[d]]
-        bb = BB[d, :].astype(float)
+        R = class_recs[image_ids[d]]  # all ground truthes
+        bb = BB[d, :].astype(float)  # one detection
         ovmax = -np.inf
         BBGT = R['bbox'].astype(float)
 
         if BBGT.size > 0:
-            # compute overlaps
+            # compute overlaps and get max overlap
             # intersection
             ixmin = np.maximum(BBGT[:, 0], bb[0])
             iymin = np.maximum(BBGT[:, 1], bb[1])
@@ -109,10 +122,8 @@ def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metr
             ih = np.maximum(iymax - iymin + 1., 0.)
             inters = iw * ih
 
-            # union
-            uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) +
-                   (BBGT[:, 2] - BBGT[:, 0] + 1.) *
-                   (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
+            # union = A + B - A & B
+            uni = (bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) + (BBGT[:, 2] - BBGT[:, 0] + 1.) * (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters
 
             overlaps = inters / uni
             ovmax = np.max(overlaps)
@@ -128,8 +139,10 @@ def voc_eval(detpath, annopath, imagesetfile, classid, ovthresh=0.5, use_07_metr
             fp[d] = 1.
 
     # compute precision recall
+    # print('fp:', fp)
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
+    # print("fuck:", fp.shape, tp.shape, tp)
     rec = tp / float(npos)
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth

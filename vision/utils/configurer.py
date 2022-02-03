@@ -7,13 +7,18 @@ class Configurer:
     def __init__(self, config_file: str = 'default.cfg'):
         self.config_file = config_file
         self.logger = Logger.get_logger()
-
+        self.init_default_cfg()
+        self.read_config()
+        self.check()
+        self.log_config()
+    
+    def init_default_cfg(self):
         self.intattr = ['t_max', 'batch_size', 'num_epochs', 'num_workers', 'validation_epochs', 'debug_steps']
         self.floatattr = ['gamma', 'mb2_width_mult', 'lr', 'learning_rate', 'momentum', 'weight_decay', 'base_net_lr', 'extra_layers_lr']
         self.boolattr = ['balance_data', 'freeze_base_net', 'freeze_net', 'ssd320', 'use_cuda']
-        self.dataset_type = 'voc'
-        self.datasets = []
-        self.validation_dataset = None
+        self.dataset_type = 'city_scapes'  # voc
+        self.datasets = ['data', ]  # []
+        self.validation_dataset = 'data'
         self.balance_data = False
         self.city = 'berlin'
         self.net = 'mb3-large-ssd-lite'
@@ -38,7 +43,7 @@ class Configurer:
         self.num_workers = 4
         self.validation_epochs = 5
         self.debug_steps = 100
-        self.use_cuda = False
+        self.use_cuda = True
         self.checkpoint_folder = 'models/'
     
     def check(self):
@@ -46,7 +51,7 @@ class Configurer:
         assert self.scheduler in  ['multi-step', 'cosine']
     
     def read_config(self):
-        assert os.path.exists(self.config_file), f'ERROR: config file "{self.config_file}" does not exist!'
+        if not os.path.exists(self.config_file): return
         with open(self.config_file) as f:
             for line in f:
                 arg, val = line.strip().split()
@@ -60,7 +65,8 @@ class Configurer:
                 elif arg in self.boolattr:
                     self.__setattr__(arg, bool(val))
                 elif arg == 'datasets':
-                    self.datasets.append(val)
+                    if val not in self.datasets:
+                        self.datasets.append(val)
                 else:
                     self.__setattr__(arg, val)
                     
@@ -68,6 +74,6 @@ class Configurer:
         configs = vars(self)
         self.logger.info('================= Config =================')
         for k, v in configs.items():
-            self.logger.info(f'\t{k} = {v}')
+            self.logger.info(f'\t{k} = {type(v)}:{v}')
         self.logger.info('================= ====== =================')
 
