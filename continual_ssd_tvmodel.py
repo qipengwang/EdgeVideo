@@ -42,7 +42,7 @@ logger = Logger.get_logger()
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() and cfg.use_cuda else "cpu")
 
 
-def predict(net, dataset, savepath, cfg):
+def predict(net, dataset, savepath):
     logger.info('predicting...')
     net.eval()
     
@@ -122,9 +122,9 @@ if __name__ == '__main__':
     
     dataset_path = cfg.datasets[0]
     if cfg.dataset_type == 'city_scapes':
-        train_dataset = ContinualCityscapesDataset(dataset_path, city=cfg.city, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt',
+        train_dataset = ContinualCityscapesDataset(dataset_path, citys=cfg.citys, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt',
                                             transform=train_transform, target_transform=target_transform, mode='TRAIN')
-        val_dataset = ContinualCityscapesDataset(cfg.validation_dataset, city=cfg.city, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt',
+        val_dataset = ContinualCityscapesDataset(cfg.validation_dataset, citys=cfg.citys, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt',
                                                 transform=test_transform, target_transform=target_transform, mode='TEST')
         num_classes = len(train_dataset.class_names)
     else:
@@ -161,25 +161,29 @@ if __name__ == '__main__':
         sys.exit(1)
 
     net.to(DEVICE)
-    logger.info('predicting baseline using pretrained model')
-    baseline_dataset = CityscapesDataset(rootdir=cfg.validation_dataset, city=cfg.city, labeldir='labels_coco91', 
+    baseline_dataset = CityscapesDataset(rootdir=cfg.validation_dataset, citys=cfg.citys, labeldir='labels_coco91', 
                                         labelfile='preprocess/coco-paper-labels.txt', 
                                         transform=train_transform, target_transform=target_transform, mode='ALL')
-    cfg_fn_wo_extension = os.path.splitext(os.path.basename(args.config))
-    exit()
-    predict(net=net, dataset=baseline_dataset, savepath=f'evaluate/{cfg_fn_wo_extension}_baseline.csv')
+    cfg_fn_wo_extension = os.path.splitext(os.path.basename(args.config))[0]
+    # exit()
+    savedir = f'evaluate/{cfg_fn_wo_extension}'
+    os.makedirs(savedir, exist_ok=True)
+    logger.info('predicting baseline using pretrained model')
+    predict(net=net, dataset=baseline_dataset, savepath=f'{savedir}/{cfg_fn_wo_extension}_baseline.csv')
     logger.info('predicting first window using pretrained model')
-    predict(net=net, dataset=val_dataset, savepath=f'evaluate/{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.csv')
+    predict(net=net, dataset=val_dataset, savepath=f'{savedir}/{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.csv')
     optimizer = torch.optim.SGD(params, lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
-    while train_dataset.next_window() and val_dataset.next_window():
+    while val_dataset.next_window():
+        logger.info(f'evaluate {val_dataset.cur_window}/{val_dataset.num_window} window')
         if cfg.scheduler == 'multi-step':
             milestones = [int(v.strip()) for v in cfg.milestones.split(",")]
             scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=cfg.gamma, last_epoch=-1)
         elif cfg.scheduler == 'cosine':
             scheduler = CosineAnnealingLR(optimizer, T_max=cfg.t_max, last_epoch=last_epoch)
         
-        train(net=net, dataset=train_dataset, optimizer=optimizer, scheduler=scheduler, device=DEVICE)
-        predict(net=net, dataset=val_dataset, savepath=f'evaluate/{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.csv')
-        model_path = os.path.join(cfg.checkpoint_folder, f"ssdlite320-mb3L_{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.pth")
+        train(net=net, dataset=train_dataset, optimizer=optimizer, scheduler=scheduler)
+        train_dataset.next_window()
+        predict(net=net, dataset=val_dataset, savepath=f'{savedir}/{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.csv')
+        model_path = os.path.join(savedir, f"ssdlite320-mb3L_{cfg_fn_wo_extension}_{val_dataset.cur_window + 1}_{val_dataset.num_window}.pth")
         torch.save(net.state_dict(), model_path)
         logger.info(f"Saved model {model_path}")

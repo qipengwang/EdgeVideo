@@ -16,11 +16,13 @@ class Configurer:
         self.intattr = ['t_max', 'batch_size', 'num_epochs', 'num_workers', 'validation_epochs', 'debug_steps']
         self.floatattr = ['gamma', 'mb2_width_mult', 'lr', 'learning_rate', 'momentum', 'weight_decay', 'base_net_lr', 'extra_layers_lr']
         self.boolattr = ['balance_data', 'freeze_base_net', 'freeze_net', 'ssd320', 'use_cuda']
+        self.listattr = ['datasets', 'citys']
+
         self.dataset_type = 'city_scapes'  # voc
         self.datasets = ['data', ]  # []
         self.validation_dataset = 'data'
         self.balance_data = False
-        self.city = 'berlin'
+        self.citys = []
         self.net = 'mb3-large-ssd-lite'
         self.freeze_base_net = False
         self.freeze_net = False
@@ -39,8 +41,8 @@ class Configurer:
         self.milestones = '80,100'
         self.t_max = 120
         self.batch_size = 16
-        self.num_epochs = 200
-        self.num_workers = 4
+        self.num_epochs = 100
+        self.num_workers = 8
         self.validation_epochs = 5
         self.debug_steps = 100
         self.use_cuda = True
@@ -54,7 +56,11 @@ class Configurer:
         if not os.path.exists(self.config_file): return
         with open(self.config_file) as f:
             for line in f:
-                arg, val = line.strip().split()
+                if line.strip().split()[0] in self.listattr:
+                    arg, val = line.strip().split()[0], line.strip().split()[1:]
+                else:
+                    arg, val = line.strip().split()
+
                 if arg in self.intattr:
                     self.__setattr__(arg, int(val))
                 elif arg in self.floatattr:
@@ -64,9 +70,10 @@ class Configurer:
                         self.__setattr__('learning_rate', float(val))
                 elif arg in self.boolattr:
                     self.__setattr__(arg, bool(val))
-                elif arg == 'datasets':
-                    if val not in self.datasets:
-                        self.datasets.append(val)
+                elif arg in self.listattr:
+                    for v in val:
+                        if v not in getattr(self, arg):
+                            self.__getattribute__(arg).extend(val)
                 else:
                     self.__setattr__(arg, val)
                     

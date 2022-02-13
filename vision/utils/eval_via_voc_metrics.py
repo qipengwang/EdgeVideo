@@ -41,8 +41,8 @@ def voc_ap(rec, prec, use_07_metric=False):
 def voc_eval(detpath, annopath, classid, ovthresh=0.5, use_07_metric=False):
     """
     Top level function that does the PASCAL VOC evaluation.
-    detpath: Path to detections file
-    annopath: Path to annotations json file
+    detpath: Path to detections file: predictions
+    annopath: Path to annotations json file: ground_truth
     imagesetfile: Text file containing the list of images, one image per line.
     classid: Category name (duh)
     cachedir: Directory for caching the annotations
@@ -87,6 +87,7 @@ def voc_eval(detpath, annopath, classid, ovthresh=0.5, use_07_metric=False):
         dets = json.load(f)
     image_ids, confidence, BB = [], [], []
     for k, vs in dets.items():
+        if k not in class_recs: continue
         for v in vs:
             if v['class'] == classid:
                 image_ids.append(k)
@@ -106,6 +107,7 @@ def voc_eval(detpath, annopath, classid, ovthresh=0.5, use_07_metric=False):
     tp = np.zeros(nd)
     fp = np.zeros(nd)
     for d in range(nd):
+        if image_ids[d] not in class_recs: continue
         R = class_recs[image_ids[d]]  # all ground truthes
         bb = BB[d, :].astype(float)  # one detection
         ovmax = -np.inf

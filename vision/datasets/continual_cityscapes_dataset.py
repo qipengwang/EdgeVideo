@@ -9,16 +9,13 @@ from .cityscapes_dataset import CityscapesDataset
 from more_itertools import chunked
 
 class ContinualCityscapesDataset(CityscapesDataset):
-    def __init__(self, rootdir: str, city: str="", transform=None, target_transform=None, 
+    def __init__(self, rootdir: str, citys: list=[], transform=None, target_transform=None, 
                 mode: str='TRAIN', labelfile: str='models/cityscapes-labels.txt', imagedir: str='images', labeldir: str='labels', num_window: int=10):
-        super(ContinualCityscapesDataset, self).__init__(rootdir, city=city, imagedir=imagedir, labeldir=labeldir, labelfile=labelfile,
+        super(ContinualCityscapesDataset, self).__init__(rootdir, citys=citys, imagedir=imagedir, labeldir=labeldir, labelfile=labelfile,
                                                          transform=transform, target_transform=target_transform, mode='ALL')
         mode = mode.upper()
         assert mode in ['TRAIN', 'TEST'], f'mode should in ["TRAIN", "TEST"]'
-        if mode == 'TRAIN':
-            self.cur_window = 0
-        else:
-            self.cur_window = 0
+        self.cur_window = 0
         self.window_size = math.ceil(len(self.ids) / num_window)
         self.chunked_ids = list(chunked(self.ids, self.window_size))
         self.num_window = len(self.chunked_ids)

@@ -6,14 +6,16 @@ import pandas as pd
 import cv2
 
 class CityscapesDataset(Dataset):
-    def __init__(self, rootdir: str, city: str="", transform=None, target_transform=None, mode: str='ALL', 
+    def __init__(self, rootdir: str, citys: list=[], transform=None, target_transform=None, mode: str='ALL', 
                     labelfile: str='preprocess/cityscapes-labels.txt', imagedir: str='images', labeldir: str='labels'):
         super().__init__()
         mode = mode.upper()
         self.rootdir = rootdir
-        self.city = city
+        self.citys = citys
         self.image_rootdir = os.path.join(rootdir, imagedir)
         self.label_rootdir = os.path.join(rootdir, labeldir)
+        if not self.citys or self.citys[0] == 'ALL':
+            self.citys = os.listdir(self.image_rootdir)
         self.transform = transform
         self.target_transform = target_transform
         assert mode in ['ALL', 'TRAIN', 'TEST'], f'mode {mode} is not supported that should in ["TRAIN", "TEST", "ALL"]'
@@ -58,12 +60,13 @@ class CityscapesDataset(Dataset):
     
     def get_image_ids(self):
         ids = []
-        for root, dirs, files in os.walk(os.path.join(self.image_rootdir, self.city) if self.city else self.image_rootdir):
-            for file in files:
-                relative_path = os.path.relpath(os.path.join(root, file), self.image_rootdir)
-                df = pd.read_csv(os.path.join(self.label_rootdir, relative_path + '.csv'))
-                if len(df):
-                    ids.append(os.path.join(relative_path))
+        for city in self.citys:
+            for root, dirs, files in os.walk(os.path.join(self.image_rootdir, city) if city else self.image_rootdir):
+                for file in files:
+                    relative_path = os.path.relpath(os.path.join(root, file), self.image_rootdir)
+                    df = pd.read_csv(os.path.join(self.label_rootdir, relative_path + '.csv'))
+                    if len(df):
+                        ids.append(os.path.join(relative_path))
         if self.mode == 'TRAIN':
             ids = [ids[i] for i in range(len(ids)) if i % int(len(ids) * self.test_percentage) != 0]
         elif self.mode == 'TEST':
