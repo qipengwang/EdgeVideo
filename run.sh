@@ -4,3 +4,6 @@
 CUDA_VISIBLE_DEVICES=0 python -u continual_ssd_tvmodel.py  | tee log/continual.log
 CUDA_VISIBLE_DEVICES=1 python -u continual_ssd_tvmodel.py  --freeze_base_net | tee log/continual_freezebasenet.log
 CUDA_VISIBLE_DEVICES=2 python -u continual_ssd_tvmodel.py  --freeze_net | tee log/continual_freezenet.log
+
+cd EdgeVideo && source activate torch10
+CUDA_VISIBLE_DEVICES=0 python -u continual_ssd_tvmodel.py --config cfg/ytb_e1_ws10.cfg

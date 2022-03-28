@@ -13,16 +13,19 @@ class Configurer:
         self.log_config()
     
     def init_default_cfg(self):
-        self.intattr = ['t_max', 'batch_size', 'num_epochs', 'num_workers', 'validation_epochs', 'debug_steps']
-        self.floatattr = ['gamma', 'mb2_width_mult', 'lr', 'learning_rate', 'momentum', 'weight_decay', 'base_net_lr', 'extra_layers_lr']
+        self.intattr = ['t_max', 'batch_size', 'num_epochs', 'num_workers', 'validation_epochs', 'debug_steps', 'num_window']
+        self.floatattr = ['gamma', 'mb2_width_mult', 'lr', 'learning_rate', 'momentum', 
+                          'weight_decay', 'base_net_lr', 'extra_layers_lr', 'sample_rate']
         self.boolattr = ['balance_data', 'freeze_base_net', 'freeze_net', 'ssd320', 'use_cuda']
-        self.listattr = ['datasets', 'citys']
+        self.listattr = ['subdirs', ]
 
         self.dataset_type = 'city_scapes'  # voc
-        self.datasets = ['data', ]  # []
-        self.validation_dataset = 'data'
+        self.datasets = 'data'  # []
+        self.validation_dataset = None
         self.balance_data = False
-        self.citys = []
+        self.subdirs = []
+        self.sampler = None
+        self.sample_rate = 0.5
         self.net = 'mb3-large-ssd-lite'
         self.freeze_base_net = False
         self.freeze_net = False
@@ -45,12 +48,19 @@ class Configurer:
         self.num_workers = 8
         self.validation_epochs = 5
         self.debug_steps = 100
+        self.num_window = 10
         self.use_cuda = True
         self.checkpoint_folder = 'models/'
+        self.imagedir = None
+        self.labeldir = None
     
     def check(self):
         assert self.net in ['mb1-ssd', 'mb1-ssd-lite', 'mb2-ssd-lite', 'mb3-large-ssd-lite', 'mb3-small-ssd-lite', 'vgg16-ssd']
         assert self.scheduler in  ['multi-step', 'cosine']
+        if not self.validation_dataset:
+            self.validation_dataset = self.datasets
+        if 'ALL' in self.subdirs:
+            self.subdirs = os.listdir(os.path.join(self.datasets, self.imagedir))
     
     def read_config(self):
         if not os.path.exists(self.config_file): return

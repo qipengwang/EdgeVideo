@@ -11,7 +11,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
-from vision.datasets.continual_cityscapes_dataset import ContinualCityscapesDataset
+from vision.datasets.continual_dataset import ContinualDataset
 from vision.transforms.transforms import *
 from vision.utils.misc import str2bool, Timer, freeze_net_layers, store_labels, arg_parser
 from vision.ssd.ssd import MatchPrior
@@ -24,12 +24,13 @@ from vision.ssd.mobilenetv3_ssd_lite import create_mobilenetv3_ssd_lite_predicto
 from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite, create_squeezenet_ssd_lite_predictor
 from vision.datasets.voc_dataset import VOCDataset
 from vision.datasets.open_images import OpenImagesDataset
-from vision.datasets.cityscapes_dataset import CityscapesDataset
+from vision.datasets.basic_dataset import BasicDataset
 from vision.nn.multibox_loss import MultiboxLoss
 from vision.ssd.config import vgg_ssd_config, mobilenetv1_ssd_config, squeezenet_ssd_config, mobilenetv3_ssd320_config
 from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
 from vision.utils.configurer import Configurer
 from vision.utils.logger import Logger
+from vision.sampler.ramdom_sampler import RandomSampler
 
 
 # prepare for training
@@ -117,15 +118,21 @@ if __name__ == '__main__':
         lambda img, boxes=None, labels=None: (img / 255, boxes, labels),
         ToTensor(),
     ])
-
-    assert len(cfg.datasets) == 1, "continual learning not supports multiply dataset"
     
-    dataset_path = cfg.datasets[0]
-    if cfg.dataset_type == 'city_scapes':
-        train_dataset = ContinualCityscapesDataset(dataset_path, citys=cfg.citys, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt',
-                                            transform=train_transform, target_transform=target_transform, mode='TRAIN')
-        val_dataset = ContinualCityscapesDataset(cfg.validation_dataset, citys=cfg.citys, labeldir='labels_coco91', labelfile='preprocess/coco-paper-labels.txt',
-                                                transform=test_transform, target_transform=target_transform, mode='TEST')
+    sampler = None
+    if cfg.sampler in ['RandomSampler', ]:
+        sampler = eval(f'{cfg.sampler}(sample_rate=0.5)')
+    # print(sampler)
+    # exit()
+
+    if cfg.dataset_type == 'city_scapes' or cfg.dataset_type == 'youtube':
+        train_dataset = ContinualDataset(cfg.datasets, subdirs=cfg.subdirs, imagedir=cfg.imagedir, labeldir=cfg.labeldir, 
+                                                    labelfile='preprocess/coco-paper-labels.txt', num_window = cfg.num_window,
+                                                    transform=train_transform, target_transform=target_transform, mode='TRAIN',
+                                                    sampler=sampler)
+        val_dataset = ContinualDataset(cfg.validation_dataset, subdirs=cfg.subdirs, imagedir=cfg.imagedir, labeldir=cfg.labeldir, 
+                                                    labelfile='preprocess/coco-paper-labels.txt', num_window = cfg.num_window,
+                                                    transform=test_transform, target_transform=target_transform, mode='TEST')
         num_classes = len(train_dataset.class_names)
     else:
         raise ValueError(f"Dataset type {cfg.dataset_type} is not supported.")
@@ -161,7 +168,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     net.to(DEVICE)
-    baseline_dataset = CityscapesDataset(rootdir=cfg.validation_dataset, citys=cfg.citys, labeldir='labels_coco91', 
+    baseline_dataset = BasicDataset(rootdir=cfg.validation_dataset, subdirs=cfg.subdirs, 
+                                        imagedir=cfg.imagedir, labeldir=cfg.labeldir,
                                         labelfile='preprocess/coco-paper-labels.txt', 
                                         transform=train_transform, target_transform=target_transform, mode='ALL')
     cfg_fn_wo_extension = os.path.splitext(os.path.basename(args.config))[0]

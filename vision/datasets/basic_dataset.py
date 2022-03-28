@@ -5,24 +5,48 @@ import numpy as np
 import pandas as pd
 import cv2
 
-class CityscapesDataset(Dataset):
-    def __init__(self, rootdir: str, citys: list=[], transform=None, target_transform=None, mode: str='ALL', 
+class BasicDataset(Dataset):
+    '''
+    This is the basic dataset of continual without window
+    the dataset structure is like this:
+    rootdir
+        |---imagedir
+        |   |---subdir1
+        |       |---img1
+        |       |---img2
+        |       |---img3
+        |   |---subdir2
+        |       .
+        |       .
+        |   |---subdir3
+        |---imagedir
+        |   |---subdir1
+        |       |---img1.csv
+        |       |---img2.csv
+        |       |---img3.csv
+        |   |---subdir2
+        |       .
+        |       .
+        |   |---subdir3
+    '''
+    
+    def __init__(self, rootdir: str, subdirs: list=[], transform=None, target_transform=None, mode: str='ALL', 
                     labelfile: str='preprocess/cityscapes-labels.txt', imagedir: str='images', labeldir: str='labels'):
         super().__init__()
         mode = mode.upper()
         self.rootdir = rootdir
-        self.citys = citys
+        self.subdirs = subdirs
         self.image_rootdir = os.path.join(rootdir, imagedir)
         self.label_rootdir = os.path.join(rootdir, labeldir)
-        if not self.citys or self.citys[0] == 'ALL':
-            self.citys = os.listdir(self.image_rootdir)
+        if not self.subdirs or 'ALL' in self.subdirs:
+            self.subdirs = os.listdir(self.image_rootdir)
         self.transform = transform
         self.target_transform = target_transform
         assert mode in ['ALL', 'TRAIN', 'TEST'], f'mode {mode} is not supported that should in ["TRAIN", "TEST", "ALL"]'
         self.mode = mode
         self.test_percentage = 0.2
         self.ids = self.get_image_ids()
-        self.class_names = CityscapesDataset.get_classname(labelfile)
+        self.class_names = BasicDataset.get_classname(labelfile)
         self.class_dict = {class_name: i for i, class_name in enumerate(self.class_names)}
     
 
@@ -60,8 +84,9 @@ class CityscapesDataset(Dataset):
     
     def get_image_ids(self):
         ids = []
-        for city in self.citys:
-            for root, dirs, files in os.walk(os.path.join(self.image_rootdir, city) if city else self.image_rootdir):
+        # print('get_image_ids')
+        for city in self.subdirs:
+            for root, _, files in os.walk(os.path.join(self.image_rootdir, city) if city else self.image_rootdir):
                 for file in files:
                     relative_path = os.path.relpath(os.path.join(root, file), self.image_rootdir)
                     df = pd.read_csv(os.path.join(self.label_rootdir, relative_path + '.csv'))

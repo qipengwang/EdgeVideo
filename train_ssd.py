@@ -19,7 +19,7 @@ from vision.ssd.mobilenetv3_ssd_lite import create_mobilenetv3_large_ssd_lite, c
 from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite
 from vision.datasets.voc_dataset import VOCDataset
 from vision.datasets.open_images import OpenImagesDataset
-from vision.datasets.cityscapes_dataset import CityscapesDataset
+from vision.datasets.basic_dataset import BasicDataset
 from vision.nn.multibox_loss import MultiboxLoss
 from vision.ssd.config import vgg_ssd_config
 from vision.ssd.config import mobilenetv1_ssd_config
@@ -155,7 +155,7 @@ if __name__ == '__main__':
             logging.info(dataset)
             num_classes = len(dataset.class_names)
         elif args.dataset_type == 'city_scapes':
-            dataset = CityscapesDataset(dataset_path, city=args.city, labeldir='labels_voc', 
+            dataset = BasicDataset(dataset_path, city=args.city, labeldir='labels_voc', 
                                         transform=train_transform, target_transform=target_transform, mode='TRAIN')
             label_file = os.path.join(args.checkpoint_folder, "cityscapes-labels.txt")
             store_labels(label_file, dataset.class_names)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
                                         transform=test_transform, target_transform=target_transform,
                                         dataset_type="test")
     elif args.dataset_type == 'city_scapes':
-        val_dataset = CityscapesDataset(args.validation_dataset, city=args.city, labeldir='labels_voc',
+        val_dataset = BasicDataset(args.validation_dataset, city=args.city, labeldir='labels_voc',
                                         transform=test_transform, target_transform=target_transform,
                                         mode='TEST')
     # logging.info(val_dataset)

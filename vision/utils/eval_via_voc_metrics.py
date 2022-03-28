@@ -38,7 +38,7 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def voc_eval(detpath, annopath, classid, ovthresh=0.5, use_07_metric=False):
+def voc_eval(detpath, annopaths, classid, ovthresh=0.5, use_07_metric=False):
     """
     Top level function that does the PASCAL VOC evaluation.
     detpath: Path to detections file: predictions
@@ -59,22 +59,26 @@ def voc_eval(detpath, annopath, classid, ovthresh=0.5, use_07_metric=False):
     # with open(imagesetfile) as f:
     #     imagenames = [x.strip() for x in f]
     
-    with open(annopath) as f:
-        recs = json.load(f)
-    # recs = Dict[str, List[Dict]]
-
     # extract gt objects for this class
     class_recs = {}
     npos = 0
-    for imagename in recs:
-        R = [obj for obj in recs[imagename] if obj['class'] == classid]
-        bbox = np.array([x['bbox'] for x in R])
-        # difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
-        det = [False] * len(R)
-        npos += len(R)
-        class_recs[imagename] = {'bbox': bbox,
-                                #  'difficult': difficult,
-                                 'det': det}
+    if isinstance(annopaths, str):
+        annopaths = [annopaths]
+    for annopath in annopaths:
+        with open(annopath) as f:
+            recs = json.load(f)  # Dict[str, List[Dict]]
+        for imagename in recs:
+            R = [obj 
+                 for obj in recs[imagename] 
+                    if obj['class'] == classid 
+                        and (float(obj['bbox'][2]) - float(obj['bbox'][0])) * (float(obj['bbox'][3]) - float(obj['bbox'][1])) > 1e5]
+            bbox = np.array([x['bbox'] for x in R])
+            # difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+            det = [False] * len(R)
+            npos += len(R)
+            class_recs[imagename] = {'bbox': bbox,
+                                    #  'difficult': difficult,
+                                    'det': det}
 
     # read dets
     # with open(detpath, 'r') as f:
